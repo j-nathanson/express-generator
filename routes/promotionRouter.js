@@ -2,58 +2,93 @@
 const express = require('express');
 // object we can use express routing methods
 const promotionRouter = express.Router();
+const Promotion = require('../models/promotion');
 
 // Router for '/promotions'. router object methods are chained instead of called separately. 
 promotionRouter.route('/')
-    .all((req, res, next) => {
-        // ALL HTTP Verbs
-        res.statusCode = 200;
-        res.setHeader('Content-Type', 'text/plain');
-        next();
+    // GET data on all promotions
+    .get((req, res, next) => {
+        // use moosegose client Model to find all of this model
+        Promotion.find()
+            // access the results promise and send json to user
+            .then(promotions => {
+                res.statusCode = 200;
+                res.setHeader('Content-Type', 'application/json');
+                // send JSON to the client
+                res.json(promotions);
+            })
+            // pass off error to overall error catcher in express
+            .catch(err => next(err));
     })
-    .get((req, res) => {
-        // GET request
-        res.end('Will send all the promotions to you');
-    })
-    .post((req, res) => {
-        // Post request
-        res.end(`Will add the promotion: ${req.body.name} with description: ${req.body.description}`);
+    .post((req, res, next) => {
+        // POST create() will save new campsite doc from the req body which was parsed from express
+        Promotion.create(req.body)
+            // if successfully added to the db send back to the server
+            .then(promotion => {
+                console.log('Promotion Created ', promotion);
+                res.statusCode = 200;
+                res.setHeader('Content-Type', 'application/json');
+                res.json(promotion);
+            })
+            .catch(err => next(err));
     })
     .put((req, res) => {
         //PUT request
         res.statusCode = 403;
         res.end('PUT operation not supported on /promotions');
     })
-    .delete((req, res) => {
-        // DELETE request
-        res.end('Deleting all promotions');
+    .delete((req, res, next) => {
+        // DELETE all promotions
+        // mongoose delete all method
+        Promotion.deleteMany()
+            .then(response => {
+                res.statusCode = 200;
+                res.setHeader('Content-Type', 'application/json');
+                res.json(response);
+            })
+            .catch(err => next(err));
     });
 
 // Routing for specific promotion
 promotionRouter.route('/:promotionId')
-    .all((req, res, next) => {
-        // ALL HTTP Verbs
-        res.statusCode = 200;
-        res.setHeader('Content-Type', 'text/plain');
-        next();
-    })
-    .get((req, res) => {
-        // GET request
-        res.end(`Will send details of the promotion: ${req.params.promotionId} to you`);
+    // GET specific promotion
+    .get((req, res, next) => {
+        Promotion.findById(req.params.promotionId)
+            // if successfully found
+            .then(promotion => {
+                res.statusCode = 200;
+                res.setHeader('Content-Type', 'application/json');
+                res.json(promotion);
+            })
+            .catch(err => next(err));
     })
     .post((req, res) => {
         // Post request
         res.end(`POST operation not supported on /promotions/${req.params.promotionId}`);
     })
-    .put((req, res) => {
-        //PUT request
-        res.write(`Updating the promotion: ${req.params.promotionId}\n`);
-        res.end(`Will update the promotion: ${req.body.name}
-        with description: ${req.body.description}`);
+    // PUT update a promotion by id new:true returns the new updated object
+    .put((req, res, next) => {
+        // to db
+        Promotion.findByIdAndUpdate(req.params.promotionId, {
+            $set: req.body
+        }, { new: true })
+            // to client
+            .then(promotion => {
+                res.statusCode = 200;
+                res.setHeader('Content-Type', 'application/json');
+                res.json(promotion);
+            })
+            .catch(err => next(err));
     })
-    .delete((req, res) => {
-        // DELETE request
-        res.end(`Deleting promotion: ${req.params.promotionId}`);
+    // DELETE a promotion by id
+    .delete((req, res, next) => {
+        Promotion.findByIdAndDelete(req.params.promotionId)
+            .then(response => {
+                res.statusCode = 200;
+                res.setHeader('Content-Type', 'application/json');
+                res.json(response);
+            })
+            .catch(err => next(err));
     });
 
 

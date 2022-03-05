@@ -6,7 +6,7 @@ const Campsite = require('../models/campsite');
 const campsiteRouter = express.Router();
 
 
-// Router for '/campsites'. router object methods are chained instead of called separately. 
+// Router for '/campsites'. 
 campsiteRouter.route('/')
     // get data on all campsites
     .get((req, res, next) => {
@@ -22,7 +22,7 @@ campsiteRouter.route('/')
             // pass off error to overall error catcher in express
             .catch(err => next(err));
     })
-    // POST a campsite
+    // POST add a campsite
     .post((req, res, next) => {
         // create save new campsite doc from the req body which was parsed from express
         Campsite.create(req.body)
