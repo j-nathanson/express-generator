@@ -41,11 +41,51 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 app.use(cookieParser());
 
-// will connect to index.html in our public folder
+// users must authenticate before connecting to the server and access data
+// on load of the homepage the middleware function will check from the user's req (GET) if they have any auth data, and if that data is present use  a basic check in order for access to the public folder files
+function auth(req, res, next) {
+  // log the req header, .authorization should be there if they have a password saved
+  console.log(req.headers);
+  const authHeader = req.headers.authorization;
+  // if .authorization is empty use setHeader to make the user enter a password
+  if (!authHeader) {
+    const err = new Error('You are not authenticated!');
+    // let client know you are requesting auth info with the 'Basic' method of input
+    res.setHeader('WWW-Authenticate', 'Basic');
+    err.status = 401;
+    // send error to client
+    return next(err);
+  }
+
+  // user has auth info
+  // encoded from client as 'Basic YWRtaW46cGFzc3dvcmQ='
+  // change to admin:password
+  // Buffer used to decode
+  const auth = Buffer.from(authHeader.split(' ')[1], 'base64').toString().split(':');
+  // then to array ['admin':'password']
+  const user = auth[0];
+  const pass = auth[1];
+
+  // basic authentication, if pass then move on to the next
+  if (user === 'admin' && pass === 'password') {
+    return next(); // authorized
+    // challenge client for auth
+  } else {
+    const err = new Error('You are not authenticated!');
+    res.setHeader('WWW-Authenticate', 'Basic');
+    err.status = 401;
+    return next(err);
+  }
+}
+
+// add middleware to server
+app.use(auth);
+
+// will connect to files in our public folder index.html first
 app.use(express.static(path.join(__dirname, 'public')));
 
 // connect routers to the server
-app.use('/', indexRouter);
+app.use('/', indexRouter); // will connect to route/index which is connected to jade index file
 app.use('/users', usersRouter);
 app.use('/campsites', campsiteRouter);
 app.use('/promotions', promotionRouter);

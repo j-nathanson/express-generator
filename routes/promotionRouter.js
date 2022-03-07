@@ -39,7 +39,6 @@ promotionRouter.route('/')
     })
     .delete((req, res, next) => {
         // DELETE all promotions
-        // mongoose delete all method
         Promotion.deleteMany()
             .then(response => {
                 res.statusCode = 200;
