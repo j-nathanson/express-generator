@@ -6,6 +6,8 @@ const logger = require('morgan');
 const session = require('express-session');
 // require('session-file-store') will return a function that uses session as param
 const FileStore = require('session-file-store')(session);
+const passport = require('passport');
+const authenticate = require('./authenticate');
 
 // import our routers
 const indexRouter = require('./routes/index');
@@ -42,9 +44,9 @@ app.set('view engine', 'jade');
 app.use(logger('dev'));
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
-//app.use(cookieParser('12345-67890-09876-54321')); 
 
-// use session/filstore middlewar
+
+// use session/filestore middleware
 //like a cookie but can track data
 // if nothing happens in a session the session wont be saved
 // resave keep session active
@@ -57,6 +59,12 @@ app.use(session({
   store: new FileStore()
 }));
 
+// only if you are using session authentication
+// middle ware functions that check for existing session for a client
+// if so the session data loaded into 'req.user'
+app.use(passport.initialize());
+app.use(passport.session());
+
 
 // allow unauth users to access the root path indexRouter so they can create one
 app.use('/', indexRouter);
@@ -64,24 +72,17 @@ app.use('/users', usersRouter);
 
 // Authentication
 function auth(req, res, next) {
-  // added session property
-  console.log(req.session);
+  // log session data
+  console.log(req.user);
 
-  //  is the client not authenticated? does it not have a session with a user field?
-  if (!req.session.user) {
-    // null session cookie value, no session
+  // if there is no session data throw err, user not signed in
+  if (!req.user) {
     const err = new Error('You are not authenticated!');
     err.status = 401;
     return next(err);
   } else {
-    // User DOES have a session cookie and is authenticated
-    if (req.session.user === 'authenticated') {
-      return next();
-    } else {
-      const err = new Error('You are not authenticated!');
-      err.status = 401;
-      return next(err);
-    }
+    // pass client to next middleware
+    return next();
   }
 }
 
@@ -91,7 +92,7 @@ app.use(auth);
 // will connect to files in our public folder index.html first
 app.use(express.static(path.join(__dirname, 'public')));
 
-// connect routers to the server
+// connect routers to the server can only access if authenticated
 app.use('/campsites', campsiteRouter);
 app.use('/promotions', promotionRouter);
 app.use('/partners', partnerRouter);
