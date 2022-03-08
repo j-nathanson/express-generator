@@ -1,6 +1,7 @@
 // import express and our campsite model for packaging/searchingfor  the data
 const express = require('express');
 const Campsite = require('../models/campsite');
+const authenticate = require('../authenticate');
 
 // object we can use express routing methods
 const campsiteRouter = express.Router();
@@ -8,7 +9,7 @@ const campsiteRouter = express.Router();
 
 // Router for '/campsites'. 
 campsiteRouter.route('/')
-    // get data on all campsites
+    // get data on all campsites, no authenication needed
     .get((req, res, next) => {
         // use moosegose client Model to find all of this model
         Campsite.find()
@@ -22,8 +23,8 @@ campsiteRouter.route('/')
             // pass off error to overall error catcher in express
             .catch(err => next(err));
     })
-    // POST add a campsite
-    .post((req, res, next) => {
+    // POST add a campsite, needs to be authenticated based on info in the req/url
+    .post(authenticate.verifyUser, (req, res, next) => {
         // create save new campsite doc from the req body which was parsed from express
         Campsite.create(req.body)
             // if successfully added to the db send back to the server
@@ -35,13 +36,13 @@ campsiteRouter.route('/')
             })
             .catch(err => next(err));
     })
-    .put((req, res) => {
+    .put(authenticate.verifyUser, (req, res) => {
         //PUT request
         res.statusCode = 403;
         res.end('PUT operation not supported on /campsites');
     })
     // DELETE all campsites
-    .delete((req, res, next) => {
+    .delete(authenticate.verifyUser, (req, res, next) => {
         // mongoose delete all method
         Campsite.deleteMany()
             .then(response => {
@@ -66,11 +67,11 @@ campsiteRouter.route('/:campsiteId')
             .catch(err => next(err));
     })
     // POST request not supported
-    .post((req, res) => {
+    .post(authenticate.verifyUser, (req, res) => {
         res.end(`POST operation not supported on /campsites/${req.params.campsiteId}`);
     })
     // PUT update a campsite by id new:true returns the new updated object
-    .put((req, res, next) => {
+    .put(authenticate.verifyUser, (req, res, next) => {
         // to db
         Campsite.findByIdAndUpdate(req.params.campsiteId, {
             $set: req.body
@@ -84,7 +85,7 @@ campsiteRouter.route('/:campsiteId')
             .catch(err => next(err));
     })
     // DELETE a campite by id
-    .delete((req, res, next) => {
+    .delete(authenticate.verifyUser, (req, res, next) => {
         Campsite.findByIdAndDelete(req.params.campsiteId)
             .then(response => {
                 res.statusCode = 200;
@@ -118,7 +119,7 @@ campsiteRouter.route('/:campsiteId/comments')
             .catch(err => next(err));
     })
     // POST add a comment to a campsite's comment array
-    .post((req, res, next) => {
+    .post(authenticate.verifyUser, (req, res, next) => {
         //  find campsite
         Campsite.findById(req.params.campsiteId)
             .then(campsite => {
@@ -144,12 +145,12 @@ campsiteRouter.route('/:campsiteId/comments')
             .catch(err => next(err));
     })
     // PUT not supported
-    .put((req, res) => {
+    .put(authenticate.verifyUser, (req, res) => {
         res.statusCode = 403;
         res.end(`PUT operation not supported on /campsites/${req.params.campsiteId}/comments`);
     })
     // DELETE every comment in the campsite's array
-    .delete((req, res, next) => {
+    .delete(authenticate.verifyUser, (req, res, next) => {
         Campsite.findById(req.params.campsiteId)
             .then(campsite => {
                 if (campsite) {
@@ -202,12 +203,12 @@ campsiteRouter.route('/:campsiteId/comments/:commentId')
             .catch(err => next(err));
     })
     // POST not supported
-    .post((req, res) => {
+    .post(authenticate.verifyUser, (req, res) => {
         res.statusCode = 403;
         res.end(`POST operation not supported on /campsites/${req.params.campsiteId}/comments/${req.params.commentId}`);
     })
     // PUT update a specific comment, only update comment text and rating field
-    .put((req, res, next) => {
+    .put(authenticate.verifyUser, (req, res, next) => {
         // find the campsite
         Campsite.findById(req.params.campsiteId)
             .then(campsite => {
@@ -244,7 +245,7 @@ campsiteRouter.route('/:campsiteId/comments/:commentId')
             .catch(err => next(err));
     })
     // DELETE a specific comment in the campsite's array
-    .delete((req, res, next) => {
+    .delete(authenticate.verifyUser, (req, res, next) => {
         Campsite.findById(req.params.campsiteId)
             .then(campsite => {
                 // if campsite and comment exist delete the specific comment

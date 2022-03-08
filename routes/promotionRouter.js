@@ -3,6 +3,7 @@ const express = require('express');
 // object we can use express routing methods
 const promotionRouter = express.Router();
 const Promotion = require('../models/promotion');
+const authenticate = require('../authenticate');
 
 // Router for '/promotions'. router object methods are chained instead of called separately. 
 promotionRouter.route('/')
@@ -20,7 +21,7 @@ promotionRouter.route('/')
             // pass off error to overall error catcher in express
             .catch(err => next(err));
     })
-    .post((req, res, next) => {
+    .post(authenticate.verifyUser, (req, res, next) => {
         // POST create() will save new campsite doc from the req body which was parsed from express
         Promotion.create(req.body)
             // if successfully added to the db send back to the server
@@ -32,12 +33,12 @@ promotionRouter.route('/')
             })
             .catch(err => next(err));
     })
-    .put((req, res) => {
+    .put(authenticate.verifyUser, (req, res) => {
         //PUT request
         res.statusCode = 403;
         res.end('PUT operation not supported on /promotions');
     })
-    .delete((req, res, next) => {
+    .delete(authenticate.verifyUser, (req, res, next) => {
         // DELETE all promotions
         Promotion.deleteMany()
             .then(response => {
@@ -61,12 +62,12 @@ promotionRouter.route('/:promotionId')
             })
             .catch(err => next(err));
     })
-    .post((req, res) => {
+    .post(authenticate.verifyUser, (req, res) => {
         // Post request
         res.end(`POST operation not supported on /promotions/${req.params.promotionId}`);
     })
     // PUT update a promotion by id new:true returns the new updated object
-    .put((req, res, next) => {
+    .put(authenticate.verifyUser, (req, res, next) => {
         // to db
         Promotion.findByIdAndUpdate(req.params.promotionId, {
             $set: req.body
@@ -80,7 +81,7 @@ promotionRouter.route('/:promotionId')
             .catch(err => next(err));
     })
     // DELETE a promotion by id
-    .delete((req, res, next) => {
+    .delete(authenticate.verifyUser, (req, res, next) => {
         Promotion.findByIdAndDelete(req.params.promotionId)
             .then(response => {
                 res.statusCode = 200;
