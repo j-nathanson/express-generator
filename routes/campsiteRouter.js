@@ -13,6 +13,8 @@ campsiteRouter.route('/')
     .get((req, res, next) => {
         // use moosegose client Model to find all of this model
         Campsite.find()
+            // when retrieving the Campsite documents, also set off function to find value the ref was pointing to and store in the subdocuments array
+            .populate('comments.author')
             // access the results promise and send json to user
             .then(campsites => {
                 res.statusCode = 200;
@@ -58,6 +60,7 @@ campsiteRouter.route('/:campsiteId')
     // GET specific campsite
     .get((req, res, next) => {
         Campsite.findById(req.params.campsiteId)
+            .populate('comments.author')
             // if successfully found
             .then(campsite => {
                 res.statusCode = 200;
@@ -102,6 +105,7 @@ campsiteRouter.route('/:campsiteId/comments')
     .get((req, res, next) => {
         // first find the specific campsite
         Campsite.findById(req.params.campsiteId)
+            .populate('comments.author')
             // if it exists send all the comments
             .then(campsite => {
                 // possible for null value to be returned
@@ -125,6 +129,7 @@ campsiteRouter.route('/:campsiteId/comments')
             .then(campsite => {
                 // if not null and truthy
                 if (campsite) {
+                    req.body.author = req.user._id;
                     // add comment to the array
                     campsite.comments.push(req.body);
                     // attempt to save the change
@@ -182,6 +187,7 @@ campsiteRouter.route('/:campsiteId/comments/:commentId')
     .get((req, res, next) => {
         //find campsite
         Campsite.findById(req.params.campsiteId)
+            .populate('comments.author')
             .then(campsite => {
                 // if not null and has the same id from the path, send comment to client
                 if (campsite && campsite.comments.id(req.params.commentId)) {

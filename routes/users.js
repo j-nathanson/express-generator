@@ -16,19 +16,35 @@ router.post('/signup', (req, res) => {
     //provide err callback
     new User({ username: req.body.username }),
     req.body.password,
-    err => {
+    (err, user) => {
       // if err, could be internal error from the server send back err object
       if (err) {
         res.statusCode = 500;
         res.setHeader('Content-Type', 'application/json');
         res.json({ err: err });
       } else {
-        // no error, tell passport to use the local strategy and after send back successful message
-        passport.authenticate('local')(req, res, () => {
-          res.statusCode = 200;
-          res.setHeader('Content-Type', 'application/json');
-          res.json({ success: true, status: 'Registration Successful!' });
-        });
+        // see if first/lastname was sent and set the user propeperties
+        if (req.body.firstname) {
+          user.firstname = req.body.firstname;
+        }
+        if (req.body.lastname) {
+          user.lastname = req.body.lastname;
+        }
+        // attempt to save in db
+        user.save(err => {
+          if (err) {
+            res.statusCode = 500;
+            res.setHeader('Content-Type', 'application/json');
+            res.json({ err: err });
+            return;
+          }
+          // no error, tell passport to use the local strategy and after send back successful message
+          passport.authenticate('local')(req, res, () => {
+            res.statusCode = 200;
+            res.setHeader('Content-Type', 'application/json');
+            res.json({ success: true, status: 'Registration Successful!' });
+          });
+        })
       }
     }
   );
