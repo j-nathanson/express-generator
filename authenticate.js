@@ -62,3 +62,17 @@ exports.jwtPassport = passport.use(
 
 // export verify incoming request is from an authenticated user, don't create a session
 exports.verifyUser = passport.authenticate('jwt', { session: false });
+
+// Verify admin
+exports.verifyAdmin = (req, res, next) => {
+    if (req.user.admin) {
+        return next() // user is an admin allow for next steps in router
+    } else {
+        // user is not an admin
+        const err = new Error("You are not authorized to perform this operation!")
+        err.status = 403
+        // res.statusCode = 403
+        // res.end("test")
+        return next(err)
+    }
+}

@@ -4,9 +4,15 @@ const router = express.Router();
 const passport = require('passport');
 const authenticate = require('../authenticate');
 
-/* GET users listing. */
-router.get('/', function (req, res, next) {
-  res.send('respond with a resource');
+// GET all users, admin only
+router.get('/', authenticate.verifyUser, authenticate.verifyAdmin, (req, res,) => {
+  User.find()
+    .then(users => {
+      res.statusCode = 200;
+      res.setHeader('Content-Type', 'application/json');
+      res.json(users);
+    })
+    .catch(err => next(err));
 });
 
 // POST allows new user to register on website

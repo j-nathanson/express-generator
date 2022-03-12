@@ -22,6 +22,7 @@ const commentSchema = new Schema({
         required: true
     },
     author: {
+        // store ref to user document through the idea
         type: mongoose.Schema.Types.ObjectId,
         ref: 'User'
     }

@@ -21,7 +21,7 @@ promotionRouter.route('/')
             // pass off error to overall error catcher in express
             .catch(err => next(err));
     })
-    .post(authenticate.verifyUser, (req, res, next) => {
+    .post(authenticate.verifyUser, authenticate.verifyAdmin, (req, res, next) => {
         // POST create() will save new campsite doc from the req body which was parsed from express
         Promotion.create(req.body)
             // if successfully added to the db send back to the server
@@ -38,7 +38,7 @@ promotionRouter.route('/')
         res.statusCode = 403;
         res.end('PUT operation not supported on /promotions');
     })
-    .delete(authenticate.verifyUser, (req, res, next) => {
+    .delete(authenticate.verifyUser, authenticate.verifyAdmin, (req, res, next) => {
         // DELETE all promotions
         Promotion.deleteMany()
             .then(response => {
@@ -67,7 +67,7 @@ promotionRouter.route('/:promotionId')
         res.end(`POST operation not supported on /promotions/${req.params.promotionId}`);
     })
     // PUT update a promotion by id new:true returns the new updated object
-    .put(authenticate.verifyUser, (req, res, next) => {
+    .put(authenticate.verifyUser, authenticate.verifyAdmin, (req, res, next) => {
         // to db
         Promotion.findByIdAndUpdate(req.params.promotionId, {
             $set: req.body
@@ -81,7 +81,7 @@ promotionRouter.route('/:promotionId')
             .catch(err => next(err));
     })
     // DELETE a promotion by id
-    .delete(authenticate.verifyUser, (req, res, next) => {
+    .delete(authenticate.verifyUser, authenticate.verifyAdmin, (req, res, next) => {
         Promotion.findByIdAndDelete(req.params.promotionId)
             .then(response => {
                 res.statusCode = 200;

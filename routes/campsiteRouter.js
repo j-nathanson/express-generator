@@ -26,7 +26,7 @@ campsiteRouter.route('/')
             .catch(err => next(err));
     })
     // POST add a campsite, needs to be authenticated based on info in the req/url
-    .post(authenticate.verifyUser, (req, res, next) => {
+    .post(authenticate.verifyUser, authenticate.verifyAdmin, (req, res, next) => {
         // create save new campsite doc from the req body which was parsed from express
         Campsite.create(req.body)
             // if successfully added to the db send back to the server
@@ -40,11 +40,11 @@ campsiteRouter.route('/')
     })
     .put(authenticate.verifyUser, (req, res) => {
         //PUT request
-        res.statusCode = 403;
+        res.status = 403;
         res.end('PUT operation not supported on /campsites');
     })
     // DELETE all campsites
-    .delete(authenticate.verifyUser, (req, res, next) => {
+    .delete(authenticate.verifyUser, authenticate.verifyAdmin, (req, res, next) => {
         // mongoose delete all method
         Campsite.deleteMany()
             .then(response => {
@@ -74,7 +74,7 @@ campsiteRouter.route('/:campsiteId')
         res.end(`POST operation not supported on /campsites/${req.params.campsiteId}`);
     })
     // PUT update a campsite by id new:true returns the new updated object
-    .put(authenticate.verifyUser, (req, res, next) => {
+    .put(authenticate.verifyUser, authenticate.verifyAdmin, (req, res, next) => {
         // to db
         Campsite.findByIdAndUpdate(req.params.campsiteId, {
             $set: req.body
@@ -88,7 +88,7 @@ campsiteRouter.route('/:campsiteId')
             .catch(err => next(err));
     })
     // DELETE a campite by id
-    .delete(authenticate.verifyUser, (req, res, next) => {
+    .delete(authenticate.verifyUser, authenticate.verifyAdmin, (req, res, next) => {
         Campsite.findByIdAndDelete(req.params.campsiteId)
             .then(response => {
                 res.statusCode = 200;
@@ -129,6 +129,7 @@ campsiteRouter.route('/:campsiteId/comments')
             .then(campsite => {
                 // if not null and truthy
                 if (campsite) {
+                    // add id of the user into the body before it gets pushed into the array
                     req.body.author = req.user._id;
                     // add comment to the array
                     campsite.comments.push(req.body);
@@ -155,7 +156,7 @@ campsiteRouter.route('/:campsiteId/comments')
         res.end(`PUT operation not supported on /campsites/${req.params.campsiteId}/comments`);
     })
     // DELETE every comment in the campsite's array
-    .delete(authenticate.verifyUser, (req, res, next) => {
+    .delete(authenticate.verifyUser, authenticate.verifyAdmin, (req, res, next) => {
         Campsite.findById(req.params.campsiteId)
             .then(campsite => {
                 if (campsite) {
@@ -220,23 +221,31 @@ campsiteRouter.route('/:campsiteId/comments/:commentId')
             .then(campsite => {
                 // check if comment in that campsite exists
                 if (campsite && campsite.comments.id(req.params.commentId)) {
-                    // if the user gives a new rating is truthy update the old rating
-                    if (req.body.rating) {
-                        campsite.comments.id(req.params.commentId).rating = req.body.rating;
+                    // check if the comment author is the same as the user
+                    if ((campsite.comments.id(req.params.commentId).author).equals(req.user._id)) {
+                        // if the user gives a new rating is truthy update the old rating
+                        if (req.body.rating) {
+                            campsite.comments.id(req.params.commentId).rating = req.body.rating;
+                        }
+                        // if the user gives a new text is truthy update the old text
+                        if (req.body.text) {
+                            campsite.comments.id(req.params.commentId).text = req.body.text;
+                        }
+                        // attempt to save, log successful updating
+                        campsite.save()
+                            .then(campsite => {
+                                res.statusCode = 200;
+                                res.setHeader('Content-Type', 'application/json');
+                                res.json(campsite);
+                            })
+                            .catch(err => next(err));
+                    } else {
+                        err = new Error(`You cannot update a comment you are not the author of.`);
+                        err.status = 403;
+                        return next(err);
+                        // comment doesn't exist
                     }
-                    // if the user gives a new text is truthy update the old text
-                    if (req.body.text) {
-                        campsite.comments.id(req.params.commentId).text = req.body.text;
-                    }
-                    // attempt to save, log successful updating
-                    campsite.save()
-                        .then(campsite => {
-                            res.statusCode = 200;
-                            res.setHeader('Content-Type', 'application/json');
-                            res.json(campsite);
-                        })
-                        .catch(err => next(err));
-                    // campsite doesn't exisi
+                    // campsite doesn't exist
                 } else if (!campsite) {
                     err = new Error(`Campsite ${req.params.campsiteId} not found`);
                     err.status = 404;
@@ -256,15 +265,24 @@ campsiteRouter.route('/:campsiteId/comments/:commentId')
             .then(campsite => {
                 // if campsite and comment exist delete the specific comment
                 if (campsite && campsite.comments.id(req.params.commentId)) {
-                    campsite.comments.id(req.params.commentId).remove();
-                    // attempt to save
-                    campsite.save()
-                        .then(campsite => {
-                            res.statusCode = 200;
-                            res.setHeader('Content-Type', 'application/json');
-                            res.json(campsite);
-                        })
-                        .catch(err => next(err));
+                    // check if the comment author is the same as the user
+                    if ((campsite.comments.id(req.params.commentId).author).equals(req.user._id)) {
+                        campsite.comments.id(req.params.commentId).remove();
+                        // attempt to save
+                        campsite.save()
+                            .then(campsite => {
+                                res.statusCode = 200;
+                                res.setHeader('Content-Type', 'application/json');
+                                res.json(campsite);
+                            })
+                            .catch(err => next(err));
+                        // user is not the author
+                    } else {
+                        err = new Error(`You cannot delete a comment you are not the author of.`);
+                        err.status = 403;
+                        return next(err);
+                    }
+                    // comment doesn't exist
                 } else if (!campsite) {
                     err = new Error(`Campsite ${req.params.campsiteId} not found`);
                     err.status = 404;
