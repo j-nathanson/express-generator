@@ -40,6 +40,8 @@ server.on('listening', onListening);
  * Create HTTPS server.
  */
 
+// locked with public key, opened with private key
+
 // config privatekey and certificate which has the public key
 // __dirname is current directory
 const options = {
