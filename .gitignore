@@ -1,3 +1,5 @@
 node_modules
-assignment2.txt
+assignment.txt
 /sessions
+/bin/server.cert
+/bin/server.key

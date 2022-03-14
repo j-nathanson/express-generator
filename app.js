@@ -33,6 +33,23 @@ connect.then(() => console.log('Connected correctly to server'),
 
 const app = express();
 
+// redirect any traffic from insecure http server to https. Secure traffic only
+// app.all captures every type of req
+// * for the path, will catch all paths
+app.all('*', (req, res, next) => {
+  // if already sent via https
+  if (req.secure) {
+    return next();
+  } else {
+    // if it was sent via http
+    // log where the new path will be
+    console.log(`Redirecting to: https://${req.hostname}:${app.get('secPort')}${req.url}`);
+    // redirect response to be handled at the https path instead
+    // 301 permanent redirect
+    res.redirect(301, `https://${req.hostname}:${app.get('secPort')}${req.url}`);
+  }
+});
+
 // view engine setup
 app.set('views', path.join(__dirname, 'views'));
 app.set('view engine', 'jade');
