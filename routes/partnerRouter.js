@@ -4,11 +4,13 @@ const express = require('express');
 const partnerRouter = express.Router();
 const Partner = require('../models/partner');
 const authenticate = require('../authenticate');
+const cors = require('./cors');
 
 // Router for '/partners'. router object methods are chained instead of called separately. 
 partnerRouter.route('/')
-    // GET data on all campsites
-    .get((req, res, next) => {
+    .options(cors.corsWithOptions, (req, res) => res.sendStatus(200))
+    // GET
+    .get(cors.cors, (req, res, next) => {
         // use moosegose client Model to find all of this model
         Partner.find()
             // access the results promise and send json to user
@@ -21,7 +23,7 @@ partnerRouter.route('/')
             // pass off error to overall error catcher in express
             .catch(err => next(err));
     })
-    .post(authenticate.verifyUser, authenticate.verifyAdmin, (req, res, next) => {
+    .post(cors.corsWithOptions, authenticate.verifyUser, authenticate.verifyAdmin, (req, res, next) => {
         // POST create save new partner doc from the req body which was parsed from express
         Partner.create(req.body)
             // if successfully added to the db send back to the server
@@ -33,13 +35,13 @@ partnerRouter.route('/')
             })
             .catch(err => next(err));
     })
-    .put(authenticate.verifyUser, (req, res) => {
+    .put(cors.corsWithOptions, authenticate.verifyUser, authenticate.verifyAdmin, (req, res) => {
         //PUT request
         res.statusCode = 403;
         res.end('PUT operation not supported on /partners');
     })
     // DELETE all partners
-    .delete(authenticate.verifyUser, authenticate.verifyAdmin, (req, res, next) => {
+    .delete(cors.corsWithOptions, authenticate.verifyUser, authenticate.verifyAdmin, (req, res, next) => {
         // mongoose delete all method
         Partner.deleteMany()
             .then(response => {
@@ -52,8 +54,8 @@ partnerRouter.route('/')
 
 // Routing for specific partner
 partnerRouter.route('/:partnerId')
-    // GET specific partner
-    .get((req, res, next) => {
+    .options(cors.corsWithOptions, (req, res) => res.sendStatus(200))
+    .get(cors.cors, (req, res, next) => {
         Partner.findById(req.params.partnerId)
             // if successfully found
             .then(partner => {
@@ -64,11 +66,11 @@ partnerRouter.route('/:partnerId')
             .catch(err => next(err));
     })
     // POST request not supported
-    .post(authenticate.verifyUser, (req, res) => {
+    .post(cors.corsWithOptions, authenticate.verifyUser, authenticate.verifyAdmin, (req, res, next) => {
         res.end(`POST operation not supported on /partners/${req.params.partnerId}`);
     })
     // PUT update a partner by id new:true returns the new updated object
-    .put(authenticate.verifyUser, authenticate.verifyAdmin, (req, res, next) => {
+    .put(cors.corsWithOptions, authenticate.verifyUser, authenticate.verifyAdmin, (req, res) => {
         // to db
         Partner.findByIdAndUpdate(req.params.partnerId, {
             $set: req.body
@@ -82,7 +84,7 @@ partnerRouter.route('/:partnerId')
             .catch(err => next(err));
     })
     // DELETE a partner by id
-    .delete(authenticate.verifyUser, authenticate.verifyAdmin, (req, res, next) => {
+    .delete(cors.corsWithOptions, authenticate.verifyUser, authenticate.verifyAdmin, (req, res, next) => {
         Partner.findByIdAndDelete(req.params.partnerId)
             .then(response => {
                 res.statusCode = 200;

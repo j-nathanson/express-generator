@@ -4,11 +4,14 @@ const express = require('express');
 const promotionRouter = express.Router();
 const Promotion = require('../models/promotion');
 const authenticate = require('../authenticate');
+const cors = require('./cors');
 
 // Router for '/promotions'. router object methods are chained instead of called separately. 
 promotionRouter.route('/')
-    // GET data on all promotions
-    .get((req, res, next) => {
+    // OPTIONS
+    .options(cors.corsWithOptions, (req, res) => res.sendStatus(200))
+    // GET all promotions
+    .get(cors.cors, (req, res, next) => {
         // use moosegose client Model to find all of this model
         Promotion.find()
             // access the results promise and send json to user
@@ -21,7 +24,7 @@ promotionRouter.route('/')
             // pass off error to overall error catcher in express
             .catch(err => next(err));
     })
-    .post(authenticate.verifyUser, authenticate.verifyAdmin, (req, res, next) => {
+    .post(cors.corsWithOptions, authenticate.verifyUser, authenticate.verifyAdmin, (req, res, next) => {
         // POST create() will save new campsite doc from the req body which was parsed from express
         Promotion.create(req.body)
             // if successfully added to the db send back to the server
@@ -33,12 +36,12 @@ promotionRouter.route('/')
             })
             .catch(err => next(err));
     })
-    .put(authenticate.verifyUser, (req, res) => {
+    .put(cors.corsWithOptions, authenticate.verifyUser, authenticate.verifyAdmin, (req, res) => {
         //PUT request
         res.statusCode = 403;
         res.end('PUT operation not supported on /promotions');
     })
-    .delete(authenticate.verifyUser, authenticate.verifyAdmin, (req, res, next) => {
+    .delete(cors.corsWithOptions, authenticate.verifyUser, authenticate.verifyAdmin, (req, res, next) => {
         // DELETE all promotions
         Promotion.deleteMany()
             .then(response => {
@@ -51,8 +54,10 @@ promotionRouter.route('/')
 
 // Routing for specific promotion
 promotionRouter.route('/:promotionId')
-    // GET specific promotion
-    .get((req, res, next) => {
+    // OPTIONS
+    .options(cors.corsWithOptions, (req, res) => res.sendStatus(200))
+    // GET
+    .get(cors.cors, (req, res, next) => {
         Promotion.findById(req.params.promotionId)
             // if successfully found
             .then(promotion => {
@@ -62,12 +67,12 @@ promotionRouter.route('/:promotionId')
             })
             .catch(err => next(err));
     })
-    .post(authenticate.verifyUser, (req, res) => {
+    .post(cors.corsWithOptions, authenticate.verifyUser, authenticate.verifyAdmin, (req, res, next) => {
         // Post request
         res.end(`POST operation not supported on /promotions/${req.params.promotionId}`);
     })
     // PUT update a promotion by id new:true returns the new updated object
-    .put(authenticate.verifyUser, authenticate.verifyAdmin, (req, res, next) => {
+    .put(cors.corsWithOptions, authenticate.verifyUser, authenticate.verifyAdmin, (req, res) => {
         // to db
         Promotion.findByIdAndUpdate(req.params.promotionId, {
             $set: req.body
@@ -81,7 +86,7 @@ promotionRouter.route('/:promotionId')
             .catch(err => next(err));
     })
     // DELETE a promotion by id
-    .delete(authenticate.verifyUser, authenticate.verifyAdmin, (req, res, next) => {
+    .delete(cors.corsWithOptions, authenticate.verifyUser, authenticate.verifyAdmin, (req, res, next) => {
         Promotion.findByIdAndDelete(req.params.promotionId)
             .then(response => {
                 res.statusCode = 200;

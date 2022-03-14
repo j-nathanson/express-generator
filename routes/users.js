@@ -3,9 +3,10 @@ const User = require('../models/user');
 const router = express.Router();
 const passport = require('passport');
 const authenticate = require('../authenticate');
+const cors = require('./cors');
 
 // GET all users, admin only
-router.get('/', authenticate.verifyUser, authenticate.verifyAdmin, (req, res,) => {
+router.get('/', cors.corsWithOptions, authenticate.verifyUser, authenticate.verifyAdmin, (req, res,) => {
   User.find()
     .then(users => {
       res.statusCode = 200;
@@ -16,7 +17,7 @@ router.get('/', authenticate.verifyUser, authenticate.verifyAdmin, (req, res,) =
 });
 
 // POST allows new user to register on website
-router.post('/signup', (req, res) => {
+router.post('/signup', cors.corsWithOptions, (req, res) => {
   User.register(
     //create new User obj with its username,password from the client
     //provide err callback
@@ -61,7 +62,7 @@ router.post('/signup', (req, res) => {
 // use middleware before sending back response
 // passport already takes care of the errors
 //  use getToken method
-router.post('/login', passport.authenticate('local'), (req, res) => {
+router.post('/login', cors.corsWithOptions, passport.authenticate('local'), (req, res) => {
   // issue token to user, payload is the user id
   const token = authenticate.getToken({ _id: req.user._id });
   res.statusCode = 200;
@@ -70,7 +71,7 @@ router.post('/login', passport.authenticate('local'), (req, res) => {
 });
 
 // logging out and stop tracking session
-router.get('/logout', (req, res, next) => {
+router.get('/logout', cors.corsWithOptions, (req, res, next) => {
   // check if session exist
   if (req.session) {
     // delete the session on the server side, session id wont work
