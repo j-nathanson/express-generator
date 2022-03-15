@@ -14,7 +14,8 @@ const userSchema = new Schema({
     admin: {
         type: Boolean,
         default: false
-    }
+    },
+    facebookId: String,
 });
 
 // will automatically add username and password/ will salt and hash password
