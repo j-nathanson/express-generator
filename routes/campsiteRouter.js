@@ -92,7 +92,7 @@ campsiteRouter.route('/:campsiteId')
             })
             .catch(err => next(err));
     })
-    // DELETE a campite by id
+    // DELETE a campsite by id
     .delete(cors.corsWithOptions, authenticate.verifyUser, authenticate.verifyAdmin, (req, res, next) => {
         Campsite.findByIdAndDelete(req.params.campsiteId)
             .then(response => {
